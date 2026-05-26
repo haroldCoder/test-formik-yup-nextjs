@@ -29,10 +29,6 @@ export class FileDescriptorEntity {
             throw new Error('Uploading file must have progress');
         }
 
-        if (params.status !== 'uploading' && params.progress !== undefined) {
-            throw new Error('Only uploading files can have progress');
-        }
-
         this.id = params.id;
         this.name = params.name;
         this.size = params.size;

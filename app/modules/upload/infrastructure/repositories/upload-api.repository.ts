@@ -1,5 +1,6 @@
 import { UploadResultDto } from "@modules/upload/infrastructure/dtos";
 import { UploadRepository } from "@modules/upload/domain/repositories";
+import { SubmitDataEntity } from "../../domain/entities";
 
 export class UploadApiRepository implements UploadRepository {
     async upload(file: File, signal?: AbortSignal): Promise<UploadResultDto> {
@@ -25,6 +26,24 @@ export class UploadApiRepository implements UploadRepository {
             return data;
         } catch (err) {
             console.error('Upload failed:', err);
+            throw err;
+        }
+    }
+
+    async submit(data: SubmitDataEntity): Promise<boolean> {
+        try {
+            const response = await fetch('/api/submit', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to submit data');
+            }
+
+            return true;
+        } catch (err) {
+            console.error('Failed to submit data:', err);
             throw err;
         }
     }

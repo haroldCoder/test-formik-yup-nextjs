@@ -1,3 +1,4 @@
+import { RotateCcwIcon } from "lucide-react";
 import { STATUS_BADGE, STATUS_LABEL } from "../constants";
 import { UploadItem } from "../types";
 import { formatBytes } from "../utils";
@@ -5,9 +6,10 @@ import { formatBytes } from "../utils";
 interface CardFilesProps {
     file: UploadItem;
     cancelUpload: (id: string) => void;
+    retryUpload: (id: string) => void;
 }
 
-export const CardFiles = ({ file, cancelUpload }: CardFilesProps) => {
+export const CardFiles = ({ file, cancelUpload, retryUpload }: CardFilesProps) => {
     return (
         <li
             key={file.id}
@@ -18,9 +20,21 @@ export const CardFiles = ({ file, cancelUpload }: CardFilesProps) => {
                 <p className="text-sm font-medium text-white truncate max-w-[70%]">
                     {file.file.name}
                 </p>
-                <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_BADGE[file.status] ?? ""}`}>
-                    {STATUS_LABEL[file.status] ?? file.status}
-                </span>
+                <div className="flex items-center gap-2">
+                    <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_BADGE[file.status] ?? ""}`}>
+                        {STATUS_LABEL[file.status] ?? file.status}
+                    </span>
+                    {file.status === "error" && ( // si el estado del archivo es error, se muestra un boton para reintentar la subida
+                        <button
+                            type="button"
+                            onClick={() => retryUpload(file.id)}
+                            className="text-blue-500 cursor-pointer hover:text-blue-600 transition-colors"
+                        >
+                            <RotateCcwIcon className="size-4" />
+                        </button>
+                    )}
+                </div>
+
             </div>
 
             {/* File size */}

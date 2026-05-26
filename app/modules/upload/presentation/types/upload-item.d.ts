@@ -7,4 +7,5 @@ export type UploadItem = {
     progress: number;
     url?: string;
     error?: string;
+    retryCount: number;
 };

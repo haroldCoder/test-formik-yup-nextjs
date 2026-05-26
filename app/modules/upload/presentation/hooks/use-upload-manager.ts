@@ -20,6 +20,7 @@ export const useUploadManager = () => {
             file,
             status: "idle",
             progress: 0,
+            retryCount: 0,
         }));
 
         setFiles((prev) => [...prev, ...mapped]);
@@ -34,7 +35,7 @@ export const useUploadManager = () => {
         setFiles((prev) =>
             prev.map((f) =>
                 f.id === item.id
-                    ? { ...f, status: "uploading", progress: 0 }
+                    ? { ...f, status: "uploading", progress: 0, error: "" }
                     : f
             )
         );
@@ -55,7 +56,6 @@ export const useUploadManager = () => {
                 )
             );
 
-            controllers.current.delete(item.id);
         } catch (err) {
             setFiles((prev) =>
                 prev.map((f) =>
@@ -65,6 +65,9 @@ export const useUploadManager = () => {
                 )
             );
 
+            controllers.current.delete(item.id);
+        }
+        finally {
             controllers.current.delete(item.id);
         }
     };
@@ -94,11 +97,48 @@ export const useUploadManager = () => {
         await limitConcurrency(3, pending.map((f) => () => uploadFile(f)));
     };
 
-    const reset = () => {
+    const reset = (callback?: () => void) => {
         controllers.current.forEach((c) => c.abort());
         controllers.current.clear();
         setFiles([]);
+        callback?.(); // Dejamos este callback aqui, en este caso segun la aplicacion y su flujo seria para limpiar el formik
     };
+
+    const retryUpload = async (id: string) => {
+        const fileToRetry = files.find((f) => f.id === id);
+
+        if (!fileToRetry) return;
+
+        // solo retry si falló o fue cancelado
+        if (
+            fileToRetry.status !== "error" &&
+            fileToRetry.status !== "canceled"
+        ) {
+            return;
+        }
+
+        // actualizar retry count
+        setFiles((prev) =>
+            prev.map((f) =>
+                f.id === id
+                    ? {
+                        ...f,
+                        retryCount: f.retryCount + 1,
+                        status: "idle",
+                        error: undefined,
+                    }
+                    : f
+            )
+        );
+
+        // ejecutar upload nuevamente
+        await uploadFile({
+            ...fileToRetry,
+            retryCount: fileToRetry.retryCount + 1,
+            status: "idle",
+            error: undefined,
+        });
+    }
 
     return {
         files,
@@ -107,5 +147,6 @@ export const useUploadManager = () => {
         uploadAll,
         cancelUpload,
         reset,
+        retryUpload
     };
 }
