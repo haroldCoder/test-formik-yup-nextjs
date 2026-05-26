@@ -2,13 +2,7 @@ import { UploadResultDto } from "@modules/upload/infrastructure/dtos";
 import { UploadRepository } from "@modules/upload/domain/repositories";
 
 export class UploadApiRepository implements UploadRepository {
-    async upload(file: File): Promise<UploadResultDto> {
-        const controller = new AbortController();
-
-        const timeout = setTimeout(() => {
-            controller.abort();
-        }, 30000);
-
+    async upload(file: File, signal?: AbortSignal): Promise<UploadResultDto> {
         try {
             const form = new FormData();
             form.append('file', file);
@@ -16,7 +10,7 @@ export class UploadApiRepository implements UploadRepository {
             const response = await fetch('/api/upload', {
                 method: 'POST',
                 body: form,
-                signal: controller.signal
+                signal
             });
 
             if (!response.ok) {
@@ -32,9 +26,6 @@ export class UploadApiRepository implements UploadRepository {
         } catch (err) {
             console.error('Upload failed:', err);
             throw err;
-        }
-        finally {
-            clearTimeout(timeout)
         }
     }
 }

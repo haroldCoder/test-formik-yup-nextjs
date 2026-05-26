@@ -1,3 +1,3 @@
 export interface UploadRepository {
-    upload(file: File): Promise<{ id: string; url: string }>;
+    upload(file: File, signal?: AbortSignal): Promise<{ id: string; url: string }>;
 }

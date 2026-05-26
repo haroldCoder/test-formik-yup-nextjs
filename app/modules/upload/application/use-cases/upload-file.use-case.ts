@@ -3,7 +3,7 @@ import { UploadRepository } from "@modules/upload/domain/repositories";
 export class UploadFilesUseCase {
     constructor(private repo: UploadRepository) { }
 
-    execute(file: File) {
-        return this.repo.upload(file);
+    async execute(file: File, signal?: AbortSignal) {
+        return this.repo.upload(file, signal);
     }
 }
