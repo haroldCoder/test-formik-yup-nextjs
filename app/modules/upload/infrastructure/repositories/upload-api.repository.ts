@@ -17,12 +17,12 @@ export class UploadApiRepository implements UploadRepository {
                 throw new Error('Failed to upload file');
             }
 
-            const data = await response.json() as UploadResultDto;
+            const data = await response.json() as UploadResultDto; // solamente tomamos la respuesta una vez, para posteriormente retornarla
             if (!data.url) {
                 throw new Error("Invalid upload response");
             }
 
-            return response.json() as Promise<UploadResultDto>;
+            return data;
         } catch (err) {
             console.error('Upload failed:', err);
             throw err;
