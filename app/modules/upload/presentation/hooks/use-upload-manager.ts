@@ -5,6 +5,8 @@ import { UploadFilesUseCase } from "@modules/upload/application/use-cases";
 import { UploadApiRepository } from "@modules/upload/infrastructure/repositories";
 import { limitConcurrency } from "../../application/utils";
 import { UploadItem } from "../types";
+import { FileDescriptorEntity } from "../../domain/entities";
+import toast from "react-hot-toast";
 
 export const useUploadManager = () => {
     const [files, setFiles] = useState<UploadItem[]>([]);
@@ -26,21 +28,32 @@ export const useUploadManager = () => {
         setFiles((prev) => [...prev, ...mapped]);
     };
 
-    const uploadFile = async (item: UploadItem) => {
+    const uploadFile = async (item: UploadItem, actionError?: (err: Error) => void) => {
         const controller = new AbortController();
 
         controllers.current.set(item.id, controller);
 
-        // actualizar estado a uploading
-        setFiles((prev) =>
-            prev.map((f) =>
-                f.id === item.id
-                    ? { ...f, status: "uploading", progress: 0, error: "" }
-                    : f
-            )
-        );
-
         try {
+            if (!new FileDescriptorEntity({ // Aplicamos reglas de negocio, para verificar si el archivo que quiere subir el usuario tiene el tamaño ideal
+                id: item.id,
+                name: item.file.name,
+                size: item.file.size,
+                type: item.file.type,
+                status: "uploading",
+                progress: 0
+            }).isValidFormatSize()) {
+                throw new Error('Invalid file format size');
+            }
+
+            // actualizar estado a uploading
+            setFiles((prev) =>
+                prev.map((f) =>
+                    f.id === item.id
+                        ? { ...f, status: "uploading", progress: 0, error: "" }
+                        : f
+                )
+            );
+
             const response = await useCase.execute(item.file, controller.signal);
 
             setFiles((prev) =>
@@ -56,18 +69,17 @@ export const useUploadManager = () => {
                 )
             );
 
-        } catch (err) {
+        } catch (err: any) {
+            actionError?.(err); // lo llamamos si hay error, para que se encargue del formik, o lo que se tenga que hacer, muy recomendado para separar responsabilidades.
+
             setFiles((prev) =>
                 prev.map((f) =>
                     f.id === item.id
-                        ? { ...f, status: "error", error: "Upload failed" }
+                        ? { ...f, status: "error", error: err.message || "Upload failed" }
                         : f
                 )
             );
-
-            controllers.current.delete(item.id);
-        }
-        finally {
+        } finally {
             controllers.current.delete(item.id);
         }
     };
@@ -90,11 +102,11 @@ export const useUploadManager = () => {
         controllers.current.delete(id);
     };
 
-    const uploadAll = async () => {
+    const uploadAll = async ({ actionError }: { actionError: (err: Error) => void }) => {
         const pending = files.filter((f) => f.status === "idle");
 
         // maximo 3 uploads simultaneos
-        await limitConcurrency(3, pending.map((f) => () => uploadFile(f)));
+        await limitConcurrency(3, pending.map((f) => () => uploadFile(f, actionError)));
     };
 
     const reset = (callback?: () => void) => {

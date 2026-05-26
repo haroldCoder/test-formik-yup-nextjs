@@ -6,6 +6,7 @@ import { uploadSchema } from "../validations";
 import { inputCls } from "../constants";
 import { CardFiles, Loading } from "../components";
 import { FileDescriptorEntity } from "../../domain/entities";
+import toast from "react-hot-toast";
 
 type FormValues = {
     title: string;
@@ -19,6 +20,10 @@ export const UploadScreen = () => {
     const isUploading = files.some((f) => f.status === "uploading");
     const hasErrors = files.some((f) => f.status === "error");
     const allDone = files.length > 0 && files.every((f) => f.status === "done");
+
+    const actionErrorOnUploadAll = (err: Error) => {
+        toast.error(err.message || "Upload failed");
+    }
 
     return (
         <>
@@ -56,9 +61,14 @@ export const UploadScreen = () => {
                                     progress: f.progress,
 
                                 })),
-                            })
+                            }).then(() => {
+                                toast.success("Files submitted successfully");
+                                resetForm();
+                            }).catch((error) => {
+                                toast.error(error.message ?? "Error submitting files");
+                            });
 
-                            reset(() => resetForm());
+                            reset();
 
                         }}
                     >
@@ -123,7 +133,7 @@ export const UploadScreen = () => {
                                 {/* Upload all button */}
                                 <button
                                     type="button"
-                                    onClick={uploadAll}
+                                    onClick={() => uploadAll({ actionError: actionErrorOnUploadAll })}
                                     disabled={files.length === 0 || isUploading}
                                     className="w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-medium text-white
                                            hover:bg-indigo-500 active:scale-[.98] transition-all duration-150
