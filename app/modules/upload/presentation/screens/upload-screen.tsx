@@ -2,11 +2,12 @@
 
 import { ErrorMessage, Field, Form, Formik, FormikProps } from "formik";
 import { useSubmitManager, useUploadManager } from "../hooks";
-import { uploadSchema } from "../validations";
+import { FileValidations, uploadSchema } from "../validations";
 import { inputCls } from "../constants";
 import { CardFiles, Loading } from "../components";
 import { FileDescriptorEntity } from "../../domain/entities";
 import toast from "react-hot-toast";
+import { useEffect } from "react";
 
 type FormValues = {
     title: string;
@@ -14,12 +15,24 @@ type FormValues = {
 };
 
 export const UploadScreen = () => {
-    const { files, addFiles, cancelUpload, retryUpload, uploadAll, reset } = useUploadManager();
+    const { files, addFiles, cancelUpload, retryUpload, uploadAll, reset, removeFiles } = useUploadManager();
     const { isSubmitting, submit } = useSubmitManager();
 
     const isUploading = files.some((f) => f.status === "uploading");
     const hasErrors = files.some((f) => f.status === "error");
     const allDone = files.length > 0 && files.every((f) => f.status === "done");
+
+    useEffect(() => {
+        if (files.length === 0) return;
+
+        const duplicatedIds = FileValidations.validateFilesNotRepeat(files);
+
+        if (duplicatedIds.length === 0) return;
+
+        toast.error("this file is duplicated");
+
+        removeFiles({ ids: duplicatedIds });
+    }, [files, removeFiles]);
 
     const actionErrorOnUploadAll = (err: Error) => {
         toast.error(err.message || "Upload failed");

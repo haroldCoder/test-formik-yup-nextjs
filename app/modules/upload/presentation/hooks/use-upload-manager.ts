@@ -152,6 +152,10 @@ export const useUploadManager = () => {
         });
     }
 
+    const removeFiles = ({ ids }: { ids: string[] }) => {
+        setFiles((prev) => prev.filter((f) => !ids.includes(f.id)));
+    }
+
     return {
         files,
         addFiles,
@@ -159,6 +163,7 @@ export const useUploadManager = () => {
         uploadAll,
         cancelUpload,
         reset,
-        retryUpload
+        retryUpload,
+        removeFiles
     };
 }
