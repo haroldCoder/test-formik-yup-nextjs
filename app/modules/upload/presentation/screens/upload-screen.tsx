@@ -4,10 +4,10 @@ import { ErrorMessage, Field, Form, Formik, FormikProps } from "formik";
 import { useSubmitManager, useUploadManager } from "../hooks";
 import { FileValidations, uploadSchema } from "../validations";
 import { inputCls } from "../constants";
-import { CardFiles, Loading } from "../components";
+import { CardFiles, FilePicker, Loading } from "../components";
 import { FileDescriptorEntity } from "../../domain/entities";
 import toast from "react-hot-toast";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 type FormValues = {
     title: string;
@@ -17,6 +17,7 @@ type FormValues = {
 export const UploadScreen = () => {
     const { files, addFiles, cancelUpload, retryUpload, uploadAll, reset, removeFiles } = useUploadManager();
     const { isSubmitting, submit } = useSubmitManager();
+    const [isDragging, setIsDragging] = useState(false);
 
     const isUploading = files.some((f) => f.status === "uploading");
     const hasErrors = files.some((f) => f.status === "error");
@@ -125,23 +126,7 @@ export const UploadScreen = () => {
                                 </div>
 
                                 {/* Drop zone / file picker */}
-                                <label className="group flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/10 bg-white/3 px-6 py-8 cursor-pointer hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all duration-200">
-                                    <span className="text-2xl select-none">📂</span>
-                                    <span className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">
-                                        Click to choose files
-                                    </span>
-                                    <span className="text-xs text-zinc-600">JPG, PNG or PDF · max 5 MB</span>
-                                    <input
-                                        type="file"
-                                        multiple
-                                        accept=".jpg,.jpeg,.png,.pdf"
-                                        className="hidden"
-                                        onChange={(e) => {
-                                            if (!e.target.files) return;
-                                            addFiles(Array.from(e.target.files));
-                                        }}
-                                    />
-                                </label>
+                                <FilePicker isDragging={isDragging} setIsDragging={setIsDragging} addFiles={addFiles} />
 
                                 {/* Upload all button */}
                                 <button
