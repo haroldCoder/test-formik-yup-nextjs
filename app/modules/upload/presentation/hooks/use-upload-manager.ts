@@ -1,23 +1,10 @@
+"use client";
+
 import { useRef, useState } from "react";
 import { UploadFilesUseCase } from "@modules/upload/application/use-cases";
 import { UploadApiRepository } from "@modules/upload/infrastructure/repositories";
 import { limitConcurrency } from "../../application/utils";
-
-type UploadStatus =
-    | "idle"
-    | "uploading"
-    | "done"
-    | "error"
-    | "canceled";
-
-type UploadItem = {
-    id: string;
-    file: File;
-    status: UploadStatus;
-    progress: number;
-    url?: string;
-    error?: string;
-};
+import { UploadItem } from "../types";
 
 export const useUploadManager = () => {
     const [files, setFiles] = useState<UploadItem[]>([]);
