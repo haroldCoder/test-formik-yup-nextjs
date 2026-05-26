@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { UploadFilesUseCase } from "@modules/upload/application/use-cases";
 import { UploadApiRepository } from "@modules/upload/infrastructure/repositories";
+import { limitConcurrency } from "../../application/utils";
 
 type UploadStatus =
     | "idle"
@@ -102,8 +103,8 @@ export const useUploadManager = () => {
     const uploadAll = async () => {
         const pending = files.filter((f) => f.status === "idle");
 
-        // importante: no await secuencial, paraleliza
-        await Promise.all(pending.map(uploadFile));
+        // maximo 3 uploads simultaneos
+        await limitConcurrency(3, pending.map((f) => () => uploadFile(f)));
     };
 
     const reset = () => {
