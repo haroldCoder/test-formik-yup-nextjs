@@ -3,48 +3,120 @@ import { SubmitDataEntity } from '../../domain/entities';
 
 global.fetch = jest.fn();
 
+class MockXMLHttpRequest {
+    open = jest.fn();
+    send = jest.fn();
+    abort = jest.fn();
+    upload = {
+        onprogress: null as any
+    };
+    onload = null as any;
+    onerror = null as any;
+    status = 200;
+    responseText = '';
+
+    static instances: MockXMLHttpRequest[] = [];
+
+    constructor() {
+        MockXMLHttpRequest.instances.push(this);
+    }
+}
+
 describe('UploadApiRepository', () => {
     let repository: UploadApiRepository;
+    let originalXMLHttpRequest: any;
+
+    beforeAll(() => {
+        originalXMLHttpRequest = (global as any).XMLHttpRequest;
+    });
+
+    afterAll(() => {
+        (global as any).XMLHttpRequest = originalXMLHttpRequest;
+    });
 
     beforeEach(() => {
         repository = new UploadApiRepository();
         jest.clearAllMocks();
+        MockXMLHttpRequest.instances = [];
+        (global as any).XMLHttpRequest = MockXMLHttpRequest;
     });
 
     describe('upload', () => {
         it('should successfully upload a file and return the result', async () => {
             const mockResponse = { id: '123', url: '/test.png' };
-            (global.fetch as jest.Mock).mockResolvedValue({
-                ok: true,
-                json: async () => mockResponse,
-            });
-
             const file = new File([''], 'test.png');
-            const result = await repository.upload(file);
+            const uploadPromise = repository.upload(file);
 
-            expect(global.fetch).toHaveBeenCalledTimes(1);
+            const xhrInstance = MockXMLHttpRequest.instances[0];
+            expect(xhrInstance).toBeDefined();
+            expect(xhrInstance.open).toHaveBeenCalledWith('POST', '/api/upload');
+
+            // Simulate progress callback
+            if (xhrInstance.upload.onprogress) {
+                xhrInstance.upload.onprogress({
+                    lengthComputable: true,
+                    loaded: 50,
+                    total: 100
+                } as any);
+            }
+
+            // Simulate load event
+            xhrInstance.status = 200;
+            xhrInstance.responseText = JSON.stringify(mockResponse);
+            xhrInstance.onload();
+
+            const result = await uploadPromise;
             expect(result).toEqual(mockResponse);
         });
 
-        it('should throw an error if the response is not ok', async () => {
-            (global.fetch as jest.Mock).mockResolvedValue({
-                ok: false,
-            });
-
+        it('should report progress when onProgress is provided', async () => {
             const file = new File([''], 'test.png');
+            const onProgress = jest.fn();
+            const uploadPromise = repository.upload(file, undefined, onProgress);
 
-            await expect(repository.upload(file)).rejects.toThrow('Failed to upload file');
+            const xhrInstance = MockXMLHttpRequest.instances[0];
+            expect(xhrInstance).toBeDefined();
+
+            if (xhrInstance.upload.onprogress) {
+                xhrInstance.upload.onprogress({
+                    lengthComputable: true,
+                    loaded: 50,
+                    total: 100
+                } as any);
+            }
+
+            expect(onProgress).toHaveBeenCalledWith(50);
+
+            // Complete upload
+            xhrInstance.status = 200;
+            xhrInstance.responseText = JSON.stringify({ id: '123', url: '/test.png' });
+            xhrInstance.onload();
+
+            await uploadPromise;
+        });
+
+        it('should throw an error if the response is not ok', async () => {
+            const file = new File([''], 'test.png');
+            const uploadPromise = repository.upload(file);
+
+            const xhrInstance = MockXMLHttpRequest.instances[0];
+            xhrInstance.status = 500;
+            xhrInstance.responseText = JSON.stringify({ error: 'Failed to upload file' });
+            xhrInstance.onload();
+
+            await expect(uploadPromise).rejects.toThrow('Failed to upload file');
         });
 
         it('should throw an error if the response data is invalid', async () => {
-            (global.fetch as jest.Mock).mockResolvedValue({
-                ok: true,
-                json: async () => ({ id: '123' }),
-            });
-
             const file = new File([''], 'test.png');
+            const uploadPromise = repository.upload(file);
 
-            await expect(repository.upload(file)).rejects.toThrow('Invalid upload response');
+            const xhrInstance = MockXMLHttpRequest.instances[0];
+            xhrInstance.status = 200;
+            xhrInstance.responseText = JSON.stringify({ id: '123' }); // missing url
+            xhrInstance.onload();
+
+            await expect(uploadPromise).rejects.toThrow('Invalid upload response');
         });
     });
 

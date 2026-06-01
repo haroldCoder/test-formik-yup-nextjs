@@ -3,6 +3,10 @@ export type BaseFileDescriptor = {
     name: string;
     size: number;
     type: string;
+    status: 'idle' | 'uploading' | 'done' | 'error' | 'canceled';
+    progress?: number;
+    url?: string;
+    error?: string;
 };
 
 export type FileDescriptor =

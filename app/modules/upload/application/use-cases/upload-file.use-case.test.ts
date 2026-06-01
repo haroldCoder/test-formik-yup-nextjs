@@ -23,7 +23,7 @@ describe('UploadFilesUseCase', () => {
         const result = await useCase.execute(file, abortController.signal);
 
         expect(mockRepo.upload).toHaveBeenCalledTimes(1);
-        expect(mockRepo.upload).toHaveBeenCalledWith(file, abortController.signal);
+        expect(mockRepo.upload).toHaveBeenCalledWith(file, abortController.signal, undefined);
         expect(result).toEqual({ id: '123', url: '/uploads/test.png' });
     });
 

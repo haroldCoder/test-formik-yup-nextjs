@@ -55,8 +55,8 @@ export const useUploadManager = () => {
             const onProgress = (progress: number) => {
                 setFiles((prev) =>
                     prev.map((f) =>
-                        f.id === item.id
-                            ? { ...f, status: "uploading", progress }
+                        f.id === item.id && f.status === "uploading"
+                            ? { ...f, progress }
                             : f
                     )
                 );

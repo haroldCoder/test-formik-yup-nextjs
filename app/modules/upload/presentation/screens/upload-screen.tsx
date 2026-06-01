@@ -8,6 +8,7 @@ import { CardFiles, FilePicker, Loading } from "../components";
 import { FileDescriptorEntity } from "../../domain/entities";
 import toast from "react-hot-toast";
 import { useEffect, useState } from "react";
+import { FileDescriptor } from "../../domain/types/file-descriptor";
 
 type FormValues = {
     title: string;
@@ -70,11 +71,11 @@ export const UploadScreen = () => {
                                     name: f.file.name,
                                     size: f.file.size,
                                     type: f.file.type,
-                                    url: f.url!,
                                     status: f.status,
-                                    progress: f.progress,
+                                    progress: 100,
+                                    url: f.url!,
 
-                                })),
+                                }) as FileDescriptor),
                             }).then(() => {
                                 toast.success("Files submitted successfully");
                                 resetForm();
