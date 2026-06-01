@@ -96,6 +96,7 @@ export const UploadScreen = () => {
                                         Title
                                     </label>
                                     <Field
+                                        data-cy="input-title"
                                         name="title"
                                         placeholder="My awesome upload"
                                         className={inputCls}
@@ -103,6 +104,7 @@ export const UploadScreen = () => {
                                     <ErrorMessage
                                         name="title"
                                         component="p"
+                                        data-cy="error-title"
                                         className="text-xs text-red-400 mt-0.5"
                                     />
                                 </div>
@@ -113,6 +115,7 @@ export const UploadScreen = () => {
                                         Description
                                     </label>
                                     <Field
+                                        data-cy="input-description"
                                         name="description"
                                         as="textarea"
                                         rows={3}
@@ -122,6 +125,7 @@ export const UploadScreen = () => {
                                     <ErrorMessage
                                         name="description"
                                         component="p"
+                                        data-cy="error-description"
                                         className="text-xs text-red-400 mt-0.5"
                                     />
                                 </div>
@@ -131,6 +135,7 @@ export const UploadScreen = () => {
 
                                 {/* Upload all button */}
                                 <button
+                                    data-cy="btn-upload-all"
                                     type="button"
                                     onClick={() => uploadAll({ actionError: actionErrorOnUploadAll })}
                                     disabled={files.length === 0 || isUploading}
@@ -158,6 +163,7 @@ export const UploadScreen = () => {
 
                                 {/* Submit button */}
                                 <button
+                                    data-cy="btn-submit"
                                     type="submit"
                                     disabled={!isValid || !allDone || isUploading || hasErrors}
                                     className="w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-medium text-white

@@ -13,6 +13,9 @@ export const CardFiles = ({ file, cancelUpload, retryUpload }: CardFilesProps) =
     return (
         <li
             key={file.id}
+            data-cy="file-card"
+            data-cy-status={file.status}
+            data-cy-id={file.id}
             className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 space-y-2"
         >
             {/* File name + status badge */}
@@ -26,6 +29,7 @@ export const CardFiles = ({ file, cancelUpload, retryUpload }: CardFilesProps) =
                     </span>
                     {file.status === "error" && ( // si el estado del archivo es error, se muestra un boton para reintentar la subida
                         <button
+                            data-cy="btn-retry"
                             type="button"
                             onClick={() => retryUpload(file.id)}
                             className="text-blue-500 cursor-pointer hover:text-blue-600 transition-colors"
@@ -63,6 +67,7 @@ export const CardFiles = ({ file, cancelUpload, retryUpload }: CardFilesProps) =
             {/* Cancel button */}
             {file.status === "uploading" && (
                 <button
+                    data-cy="btn-cancel"
                     type="button"
                     onClick={() => cancelUpload(file.id)}
                     className="text-xs text-red-400 hover:text-red-300 cursor-pointer transition-colors"

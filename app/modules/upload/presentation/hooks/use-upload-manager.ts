@@ -78,6 +78,9 @@ export const useUploadManager = () => {
             );
 
         } catch (err: any) {
+            // Si el upload fue cancelado intencionalmente, no sobreescribir el estado 'canceled' con 'error'
+            if (err.name === 'AbortError') return;
+
             actionError?.(err); // lo llamamos si hay error, para que se encargue del formik, o lo que se tenga que hacer, muy recomendado para separar responsabilidades.
 
             setFiles((prev) =>

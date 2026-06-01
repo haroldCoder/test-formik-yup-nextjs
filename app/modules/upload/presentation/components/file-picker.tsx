@@ -7,6 +7,7 @@ interface FilePickerProps {
 export const FilePicker = ({ isDragging, setIsDragging, addFiles }: FilePickerProps) => {
     return (
         <label
+            data-cy="file-drop-zone"
             className={`group flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-8 cursor-pointer transition-all duration-200 ${isDragging ? "border-indigo-500 bg-indigo-500/10" : "border-white/10 bg-white/3 hover:border-indigo-500/50 hover:bg-indigo-500/5"
                 }`}
             onDragOver={(e) => {
@@ -35,6 +36,7 @@ export const FilePicker = ({ isDragging, setIsDragging, addFiles }: FilePickerPr
             </span>
             <span className="text-xs text-zinc-600">JPG, PNG or PDF · max 5 MB</span>
             <input
+                data-cy="file-input"
                 type="file"
                 multiple
                 accept=".jpg,.jpeg,.png,.pdf"
