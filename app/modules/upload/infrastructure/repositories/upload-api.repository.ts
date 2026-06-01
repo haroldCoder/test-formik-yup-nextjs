@@ -3,31 +3,51 @@ import { UploadRepository } from "@modules/upload/domain/repositories";
 import { SubmitDataEntity } from "../../domain/entities";
 
 export class UploadApiRepository implements UploadRepository {
-    async upload(file: File, signal?: AbortSignal): Promise<UploadResultDto> {
-        try {
+    upload(file: File, signal?: AbortSignal, onProgress?: (progress: number) => void): Promise<UploadResultDto> {
+        return new Promise((resolve, reject) => {
             const form = new FormData();
             form.append('file', file);
 
-            const response = await fetch('/api/upload', {
-                method: 'POST',
-                body: form,
-                signal
-            });
+            const xhr = new XMLHttpRequest(); // usamos xmlhttprequest para poder gestionar el estado y el progreso de la subida, lo que no podemos hacer con fetch
+            xhr.open('POST', '/api/upload');
 
-            if (!response.ok) {
-                throw new Error('Failed to upload file');
+            if (signal) {
+                signal.addEventListener('abort', () => { // si la peticion se cancela, se aborta la peticion
+                    xhr.abort();
+                    reject(new DOMException('Aborted', 'AbortError'));
+                });
             }
 
-            const data = await response.json() as UploadResultDto; // solamente tomamos la respuesta una vez, para posteriormente retornarla
-            if (!data.url) {
-                throw new Error("Invalid upload response");
-            }
+            xhr.upload.onprogress = (event) => { // obtenemos el progreso de la subida
+                if (event.lengthComputable && onProgress) {
+                    const percentComplete = Math.round((event.loaded / event.total) * 100);
+                    onProgress(percentComplete);
+                }
+            };
 
-            return data;
-        } catch (err) {
-            console.error('Upload failed:', err);
-            throw err;
-        }
+            xhr.onload = () => {
+                if (xhr.status >= 200 && xhr.status < 300) { // 2xx son exitos, 3xx redicrecion, 4xx error del cliente, 5xx error del servidor
+                    try {
+                        const data = JSON.parse(xhr.responseText) as UploadResultDto;
+                        if (!data.url) throw new Error("Invalid upload response"); // si no hay url, lanzamos error
+                        resolve(data);
+                    } catch (err) {
+                        reject(err);
+                    }
+                } else {
+                    try { // si no es exito, lanzamos error
+                        const data = JSON.parse(xhr.responseText);
+                        reject(new Error(data.error || 'Failed to upload file'));
+                    } catch {
+                        reject(new Error('Failed to upload file'));
+                    }
+                }
+            };
+
+            xhr.onerror = () => reject(new Error('Network error during upload')); // si hay error de red, lanzamos error
+
+            xhr.send(form); // enviamos el formulario
+        });
     }
 
     async submit(data: SubmitDataEntity): Promise<boolean> {

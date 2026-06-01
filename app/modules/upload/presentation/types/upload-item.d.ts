@@ -1,11 +1,6 @@
-import { UploadStatus } from "@modules/upload/domain/types";
+import { FileDescriptor } from "../../domain/types/file-descriptor";
 
-export type UploadItem = {
-    id: string;
+export type UploadItem = FileDescriptor & {
     file: File;
-    status: UploadStatus;
-    progress: number;
-    url?: string;
-    error?: string;
     retryCount: number;
 };

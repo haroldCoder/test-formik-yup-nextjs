@@ -3,10 +3,9 @@
 import { useRef, useState } from "react";
 import { UploadFilesUseCase } from "@modules/upload/application/use-cases";
 import { UploadApiRepository } from "@modules/upload/infrastructure/repositories";
-import { limitConcurrency } from "../../application/utils";
+import { limitConcurrency, mapFilesToDescriptors } from "../../application/utils";
 import { UploadItem } from "../types";
 import { FileDescriptorEntity } from "../../domain/entities";
-import toast from "react-hot-toast";
 
 export const useUploadManager = () => {
     const [files, setFiles] = useState<UploadItem[]>([]);
@@ -17,11 +16,10 @@ export const useUploadManager = () => {
     const controllers = useRef<Map<string, AbortController>>(new Map());
 
     const addFiles = (newFiles: File[]) => {
-        const mapped: UploadItem[] = newFiles.map((file) => ({
-            id: crypto.randomUUID(),
-            file,
-            status: "idle",
-            progress: 0,
+        const descriptors = mapFilesToDescriptors(newFiles);
+        const mapped: UploadItem[] = descriptors.map((desc, i) => ({
+            ...desc,
+            file: newFiles[i],
             retryCount: 0,
         }));
 
@@ -39,9 +37,9 @@ export const useUploadManager = () => {
                 name: item.file.name,
                 size: item.file.size,
                 type: item.file.type,
-                status: "uploading",
+                status: "idle",
                 progress: 0
-            }).isValidFormatSize()) {
+            }).isValidFormatSize()) { // Aplicamos reglas de negocio
                 throw new Error('Invalid file format size');
             }
 
@@ -49,12 +47,22 @@ export const useUploadManager = () => {
             setFiles((prev) =>
                 prev.map((f) =>
                     f.id === item.id
-                        ? { ...f, status: "uploading", progress: 0, error: "" }
+                        ? { ...f, status: "uploading", progress: 0, error: undefined }
                         : f
                 )
             );
 
-            const response = await useCase.execute(item.file, controller.signal);
+            const onProgress = (progress: number) => {
+                setFiles((prev) =>
+                    prev.map((f) =>
+                        f.id === item.id
+                            ? { ...f, status: "uploading", progress }
+                            : f
+                    )
+                );
+            };
+
+            const response = await useCase.execute(item.file, controller.signal, onProgress);
 
             setFiles((prev) =>
                 prev.map((f) =>
@@ -137,19 +145,21 @@ export const useUploadManager = () => {
                         ...f,
                         retryCount: f.retryCount + 1,
                         status: "idle",
-                        error: undefined,
+                        error: undefined, // quitamos el error
                     }
                     : f
             )
         );
 
         // ejecutar upload nuevamente
-        await uploadFile({
+        const retryItem = {
             ...fileToRetry,
             retryCount: fileToRetry.retryCount + 1,
-            status: "idle",
-            error: undefined,
-        });
+            status: "idle" as const,
+        };
+        // @ts-ignore
+        delete retryItem.error;
+        await uploadFile(retryItem);
     }
 
     const removeFiles = ({ ids }: { ids: string[] }) => {

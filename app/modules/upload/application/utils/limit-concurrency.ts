@@ -1,8 +1,8 @@
 export async function limitConcurrency<T>(
     poolSize: number,
     tasks: (() => Promise<T>)[]
-): Promise<T[]> {
-    const results: T[] = new Array(tasks.length); // array que almacena los resultados en el mismo orden que las tareas
+): Promise<PromiseSettledResult<T>[]> {
+    const results: PromiseSettledResult<T>[] = new Array(tasks.length); // array que almacena los resultados en el mismo orden que las tareas
     let index = 0;
 
     const workers = new Array(poolSize).fill(null).map(async () => { // crear los trabajadores, segun el tamaño del pool
@@ -13,7 +13,7 @@ export async function limitConcurrency<T>(
 
             try {
                 const result = await tasks[currentIndex](); // ejecutar la tarea actual
-                results[currentIndex] = result;
+                results[currentIndex] = { status: 'fulfilled', value: result };
             } catch (err) {
                 throw err; // lanzar el error
             }
